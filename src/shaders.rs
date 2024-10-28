@@ -1,5 +1,5 @@
 
-use nalgebra_glm::{Vec3, Vec4, Mat3, mat4_to_mat3};
+use nalgebra_glm::{mat4_to_mat3, Mat3, Vec2, Vec3, Vec4};
 use crate::vertex::Vertex;
 use crate::Uniforms;
 use crate::fragment::Fragment;
@@ -45,7 +45,8 @@ pub fn fragment_shader(fragment: &Fragment, uniforms: &Uniforms, shader_type: &s
       "cloud" => cloud_shader(fragment, uniforms),
       "lava" => lava_shader(fragment, uniforms),
       "terrain" => terrain_shader(fragment),
-      "gas" => gas_shader(fragment, uniforms),
+      "ice" => ice_shader(fragment, uniforms),
+      "jupiter" => jupiter_shader(fragment, uniforms),
       _ => combined_shader(fragment, uniforms), // Default shader
   }
 }
@@ -111,7 +112,7 @@ fn terrain_shader(fragment: &Fragment) -> Color {
   Color::new(color_value, color_value / 2, color_value / 4) // Tonos terrosos
 }
 
-fn gas_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
+fn ice_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
   let ripple_pattern = (fragment.vertex_position.x * 8.0 + uniforms.time as f32 * 0.1).sin().abs();
   let intensity = (ripple_pattern * 255.0) as u8;
   Color::new(0, intensity, 255) * fragment.intensity // Azul agua
@@ -145,6 +146,46 @@ fn cloud_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
 
   noise_color * fragment.intensity
 }
+
+fn jupiter_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
+  let zoom = 100.0;  // to move our values 
+  let x = fragment.vertex_position.x;
+  let y = fragment.vertex_position.y;
+
+  let band_noise = uniforms.noise.get_noise_2d(y * zoom, 0.0);// Desplazamiento para el movimiento de bandas
+
+  // Definir colores para las diferentes bandas de gas
+  let dark_brown = Color::new(139, 69, 19);
+  let light_brown = Color::new(205, 133, 63);
+  let orange = Color::new(255, 165, 0);
+  let beige = Color::new(245, 222, 179);
+
+  // Crear bandas con variación de color usando `band_noise`
+  let band_color = if band_noise > 0.6 {
+      dark_brown
+  } else if band_noise > 0.3 {
+      beige
+  } else if band_noise > 0.0 {
+      orange
+  } else {
+      light_brown
+  };
+
+  // Agregar una "mancha" similar a la Gran Mancha Roja
+  let storm_position = Vec2::new(0.3, -0.3); // Posición en el planeta
+  let storm_radius = 0.15; // Tamaño de la tormenta
+  let distance_to_storm = ((x - storm_position.x).powi(2) + (y - storm_position.y).powi(2)).sqrt();
+
+  let storm_color = Color::new(255, 69, 0); // Rojo anaranjado brillante para la tormenta
+  let final_color = if distance_to_storm < storm_radius {
+      storm_color // La región de la tormenta
+  } else {
+      band_color // Colores de bandas para el resto
+  };
+
+  final_color * fragment.intensity
+}
+
 
 fn moving_circles_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
     let x = fragment.vertex_position.x;

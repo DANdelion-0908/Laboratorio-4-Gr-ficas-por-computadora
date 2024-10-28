@@ -136,9 +136,11 @@ fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: &[Ve
             if shader_selection == 0 {
                 shaded_color = fragment_shader(&fragment, &uniforms, "lava");
             } else if shader_selection == 1 {
-                shaded_color = fragment_shader(&fragment, &uniforms, "gas");
+                shaded_color = fragment_shader(&fragment, &uniforms, "ice");
             } else if shader_selection == 2 {
                 shaded_color = fragment_shader(&fragment, &uniforms, "cloud");
+            } else if shader_selection == 3 {
+                shaded_color = fragment_shader(&fragment, &uniforms, "jupiter");
             }
             let color = shaded_color.to_hex();
             framebuffer.set_current_color(color);
@@ -277,6 +279,10 @@ fn handle_input(window: &Window, camera: &mut Camera, mut shader_selection: u32)
 
     if window.is_key_down(Key::NumPad2) {
         shader_selection = 2;
+    }
+
+    if window.is_key_down(Key::NumPad3) {
+        shader_selection = 3;
     }
 
     return shader_selection;
