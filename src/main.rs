@@ -161,7 +161,7 @@ fn main() {
         Vec3::new(0.0, 1.0, 0.0)
     );
 
-    let obj = Obj::load("assets/models/ship.obj").expect("Failed to load obj");
+    let obj = Obj::load("assets/models/planet.obj").expect("Failed to load obj");
     let vertex_arrays = obj.get_vertex_array(); 
     let mut time = 0;
 
