@@ -159,7 +159,7 @@ fn main() {
 
     let mut framebuffer = Framebuffer::new(framebuffer_width, framebuffer_height);
     let mut window = Window::new(
-        "Presiona números del pad numérico para cmabiar de shader",
+        "Presiona números del pad numérico para cambiar de shader",
         window_width,
         window_height,
         WindowOptions::default(),
