@@ -119,32 +119,41 @@ fn ice_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
 }
 
 fn cloud_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
-  let zoom = 100.0;  // to move our values 
-  let ox = 100.0; // offset x in the noise map
-  let oy = 100.0;
+  let zoom = 100.0;  // Escala del mapa de ruido
+  let ox = 100.0; // Offset en el eje x
+  let oy = 100.0; // Offset en el eje y
+
+  // Posición del fragmento en el espacio de coordenadas
   let x = fragment.vertex_position.x;
   let y = fragment.vertex_position.y;
-  let t = uniforms.time as f32 * 0.5;
 
-  let noise_value = uniforms.noise.get_noise_2d(x * zoom + ox + t, y * zoom + oy);
+  // Tiempos diferentes para las nubes y el terreno
+  let cloud_time = uniforms.time as f32 * 0.5;  // Las nubes se mueven a un ritmo
+  let land_time = uniforms.time as f32 * 0.2;   // El terreno se mueve a otro ritmo
 
-  // Define cloud threshold and colors
-  let cloud_threshold = 0.5; // Adjust this value to change cloud density
-  let land_threshold = 0.001;
-  let cloud_color = Color::new(255, 255, 255); // White for clouds
-  let sky_color = Color::new(30, 97, 145); // Sky blue
-  let land_color = Color::new(0, 100, 0);
+  // Obtener el valor de ruido para las nubes y el terreno con sus respectivos tiempos
+  let cloud_noise = uniforms.noise.get_noise_2d(x * zoom + ox + cloud_time, y * zoom + oy);
+  let land_noise = uniforms.noise.get_noise_2d(x * zoom + ox + land_time, y * zoom + oy);
 
-  // Determine if the pixel is part of a cloud or sky
-  let noise_color = if noise_value > cloud_threshold {
-    cloud_color
-} else if noise_value > land_threshold {
-    land_color
-} else {
-    sky_color
-};
+  // Umbrales de nubes y tierra
+  let cloud_threshold = 0.5;
+  let land_threshold = 0.1;
 
-  noise_color * fragment.intensity
+  // Colores para nubes, cielo y tierra
+  let cloud_color = Color::new(255, 255, 255); // Blanco para nubes
+  let sky_color = Color::new(30, 97, 145);     // Azul para el cielo
+  let land_color = Color::new(0, 100, 0);      // Verde para tierra
+
+  // Decidir el color final basado en los umbrales
+  let final_color = if cloud_noise > cloud_threshold {
+      cloud_color  // Color de nubes
+  } else if land_noise > land_threshold {
+      land_color   // Color de tierra
+  } else {
+      sky_color    // Color del cielo
+  };
+
+  final_color * fragment.intensity
 }
 
 fn jupiter_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
