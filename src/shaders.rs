@@ -44,7 +44,6 @@ pub fn fragment_shader(fragment: &Fragment, uniforms: &Uniforms, shader_type: &s
   match shader_type {
       "cloud" => cloud_shader(fragment, uniforms),
       "lava" => lava_shader(fragment, uniforms),
-      "terrain" => terrain_shader(fragment),
       "ice" => ice_shader(fragment, uniforms),
       "jupiter" => jupiter_shader(fragment, uniforms),
       _ => combined_shader(fragment, uniforms), // Default shader
@@ -102,14 +101,6 @@ fn lava_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
   let color = dark_color.lerp(&bright_color, noise_value);
 
   color * fragment.intensity
-}
-
-
-fn terrain_shader(fragment: &Fragment) -> Color {
-  // Simulación de ruido básico
-  let noise = ((fragment.vertex_position.x * 5.0).sin() + (fragment.vertex_position.y * 5.0).cos()).abs();
-  let color_value = (noise * 255.0) as u8;
-  Color::new(color_value, color_value / 2, color_value / 4) // Tonos terrosos
 }
 
 fn ice_shader(fragment: &Fragment, uniforms: &Uniforms) -> Color {
