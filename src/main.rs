@@ -159,7 +159,7 @@ fn main() {
 
     let mut framebuffer = Framebuffer::new(framebuffer_width, framebuffer_height);
     let mut window = Window::new(
-        "Animated Fragment Shader",
+        "Presiona números del pad numérico para cmabiar de shader",
         window_width,
         window_height,
         WindowOptions::default(),
