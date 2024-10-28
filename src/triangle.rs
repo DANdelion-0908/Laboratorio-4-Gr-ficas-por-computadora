@@ -3,7 +3,7 @@ use crate::fragment::Fragment;
 use crate::vertex::Vertex;
 use crate::color::Color;
 
-pub fn triangle(v1: &Vertex, v2: &Vertex, v3: &Vertex) -> Vec<Fragment> {
+pub fn triangle(v1: &Vertex, v2: &Vertex, v3: &Vertex, shader_selection: u32) -> Vec<Fragment> {
   let mut fragments = Vec::new();
   let (a, b, c) = (v1.transformed_position, v2.transformed_position, v3.transformed_position);
 
@@ -26,7 +26,7 @@ pub fn triangle(v1: &Vertex, v2: &Vertex, v3: &Vertex) -> Vec<Fragment> {
         let normal = v1.transformed_normal * w1 + v2.transformed_normal * w2 + v3.transformed_normal * w3;
         let normal = normal.normalize();
 
-        let intensity = dot(&normal, &light_dir).max(0.0);
+        let mut intensity = dot(&normal, &light_dir).max(0.0);
 
         let base_color = Color::new(100, 100, 100);
         let lit_color = base_color * intensity;
@@ -34,6 +34,10 @@ pub fn triangle(v1: &Vertex, v2: &Vertex, v3: &Vertex) -> Vec<Fragment> {
         let depth = a.z * w1 + b.z * w2 + c.z * w3;
 
         let vertex_position = v1.position * w1 + v2.position * w2 + v3.position * w3;
+
+        if shader_selection == 0 {
+          intensity = 0.7 * (dot(&normal, &light_dir).abs() + 0.3);
+        }
 
         fragments.push(
             Fragment::new(

@@ -18,13 +18,25 @@ use obj::Obj;
 use camera::Camera;
 use triangle::triangle;
 use shaders::{vertex_shader, fragment_shader};
+use fastnoise_lite::{FastNoiseLite, NoiseType};
 
 pub struct Uniforms {
     model_matrix: Mat4,
     view_matrix: Mat4,
     projection_matrix: Mat4,
     viewport_matrix: Mat4,
-    time: u32
+    time: u32,
+    noise: FastNoiseLite
+}
+
+fn create_noise() -> FastNoiseLite {
+    create_cloud_noise()
+}
+
+fn create_cloud_noise() -> FastNoiseLite {
+    let mut noise = FastNoiseLite::with_seed(1337);
+    noise.set_noise_type(Some(NoiseType::OpenSimplex2));
+    noise
 }
 
 fn create_model_matrix(translation: Vec3, scale: f32, rotation: Vec3) -> Mat4 {
@@ -88,7 +100,7 @@ fn create_viewport_matrix(width: f32, height: f32) -> Mat4 {
     )
 }
 
-fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: &[Vertex]) {
+fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: &[Vertex], shader_selection: u32) {
     // Vertex Shader
     let mut transformed_vertices = Vec::with_capacity(vertex_array.len());
     for vertex in vertex_array {
@@ -111,16 +123,23 @@ fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, vertex_array: &[Ve
     // Rasterization
     let mut fragments = Vec::new();
     for tri in &triangles {
-        fragments.extend(triangle(&tri[0], &tri[1], &tri[2]));
+        fragments.extend(triangle(&tri[0], &tri[1], &tri[2], shader_selection));
     }
 
     // Fragment Processing
     for fragment in fragments {
         let x = fragment.position.x as usize;
         let y = fragment.position.y as usize;
+        let mut shaded_color = fragment_shader(&fragment, &uniforms, "lava");
 
         if x < framebuffer.width && y < framebuffer.height {
-            let shaded_color = fragment_shader(&fragment, &uniforms);
+            if shader_selection == 0 {
+                shaded_color = fragment_shader(&fragment, &uniforms, "lava");
+            } else if shader_selection == 1 {
+                shaded_color = fragment_shader(&fragment, &uniforms, "gas");
+            } else if shader_selection == 2 {
+                shaded_color = fragment_shader(&fragment, &uniforms, "cloud");
+            }
             let color = shaded_color.to_hex();
             framebuffer.set_current_color(color);
             framebuffer.point(x, y, fragment.depth);
@@ -134,6 +153,7 @@ fn main() {
     let framebuffer_width = 800;
     let framebuffer_height = 600;
     let frame_delay = Duration::from_millis(16);
+    let mut shader_selection = 0;
 
     let mut framebuffer = Framebuffer::new(framebuffer_width, framebuffer_height);
     let mut window = Window::new(
@@ -161,7 +181,7 @@ fn main() {
         Vec3::new(0.0, 1.0, 0.0)
     );
 
-    let obj = Obj::load("assets/models/planet.obj").expect("Failed to load obj");
+    let obj = Obj::load("assets/models/sun.obj").expect("Failed to load obj");
     let vertex_arrays = obj.get_vertex_array(); 
     let mut time = 0;
 
@@ -172,10 +192,11 @@ fn main() {
 
         time += 1;
 
-        handle_input(&window, &mut camera);
+        shader_selection = handle_input(&window, &mut camera, shader_selection);
 
         framebuffer.clear();
 
+        let noise = create_noise();
         let model_matrix = create_model_matrix(translation, scale, rotation);
         let view_matrix = create_view_matrix(camera.eye, camera.center, camera.up);
         let projection_matrix = create_perspective_matrix(window_width as f32, window_height as f32);
@@ -185,12 +206,12 @@ fn main() {
             view_matrix, 
             projection_matrix, 
             viewport_matrix,
-            time
+            time,
+            noise
         };
 
-
         framebuffer.set_current_color(0xFFDDDD);
-        render(&mut framebuffer, &uniforms, &vertex_arrays);
+        render(&mut framebuffer, &uniforms, &vertex_arrays, shader_selection);
 
         window
             .update_with_buffer(&framebuffer.buffer, framebuffer_width, framebuffer_height)
@@ -200,7 +221,7 @@ fn main() {
     }
 }
 
-fn handle_input(window: &Window, camera: &mut Camera) {
+fn handle_input(window: &Window, camera: &mut Camera, mut shader_selection: u32) -> u32 {
     let movement_speed = 1.0;
     let rotation_speed = PI/50.0;
     let zoom_speed = 0.1;
@@ -244,4 +265,19 @@ fn handle_input(window: &Window, camera: &mut Camera) {
     if window.is_key_down(Key::Down) {
       camera.zoom(-zoom_speed);
     }
+
+    // Shader selection controls
+    if window.is_key_down(Key::NumPad0) {
+        shader_selection = 0;
+    }
+
+    if window.is_key_down(Key::NumPad1) {
+        shader_selection = 1;
+    }
+
+    if window.is_key_down(Key::NumPad2) {
+        shader_selection = 2;
+    }
+
+    return shader_selection;
 }
